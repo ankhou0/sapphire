@@ -401,8 +401,9 @@ class Connector extends Component {
   checkForUpdates() {
     // check that version value has been set and
     // the user has not yet been told about an update
-    if (this.props.installedDaemonVersion !== -1 && !this.state.toldUserAboutUpdate) {
-      if (Tools.compareVersion(this.props.installedDaemonVersion, this.props.serverDaemonVersion) === -1 && this.props.serverDaemonVersion.replace(/\D/g, '') > this.props.requiredDaemonVersion) {
+    //if (this.props.installedDaemonVersion !== -1 && !this.state.toldUserAboutUpdate) {
+    if(!this.state.toldUserAboutUpdate){
+      if (Tools.compareVersion(Tools.undefinedVersion(this.props.installedDaemonVersion), this.props.serverDaemonVersion) === -1 && this.props.serverDaemonVersion.replace(/\D/g, '') > this.props.requiredDaemonVersion) {
         this.setState({
           toldUserAboutUpdate: true
         });

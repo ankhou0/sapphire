@@ -594,5 +594,13 @@ module.exports = {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  },
+
+  undefinedVersion(v1) {
+    if(v1 === -1) {
+      return "0.0.0.0";
+    } else {
+      return v1;
+    }
   }
 };
