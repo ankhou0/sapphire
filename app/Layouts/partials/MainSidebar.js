@@ -6,6 +6,7 @@ import {ContactsIcon, CurrencyUsdIcon, DownloadIcon, FormatListBulletedIcon, Gif
 import {Button, Col, Progress, Row} from 'reactstrap';
 import Dot from './../../components/Others/Dot';
 import UnlockModal from './../../components/Others/UnlockModal';
+const tools = require('../../utils/tools');
 
 import * as actions from '../../actions/index';
 
@@ -55,8 +56,14 @@ class MainSidebar extends Component {
     });
   }
 
+
+
+
   render() {
     const progressBar = this.props.paymentChainSync;
+    const daysLeft = this.props.initialBlockSyncDaysLeft;
+    const estMinsToComplete = this.props.initialBlockSyncMinutesToComplete;
+    const estMinsToCompleteStringified = tools.convertMinutesToDays(this.props.lang, this.props.initialBlockSyncMinutesToComplete);
 
     const usericon = require('../../../resources/images/logo_setup.png');
     return (
@@ -110,12 +117,35 @@ class MainSidebar extends Component {
             </div>
           </div>
           <div className="pt-5 pb-2">
-            <NavLink to="/coin/network" className="text-center pl-4 pr-4" data-tip="View network stats">
-              <div style={{ fontSize: '13px' }}>{`${this.props.lang.syncing} ${progressBar}%`}</div>
+            <div className="text-center pl-1 pr-1">
+            <NavLink to="/coin/network" style={{ fontSize: '13px' }}  data-tip="View network stats">{`${this.props.lang.syncing} ${progressBar}%`}</NavLink>
               <Progress animated striped value={progressBar} color="success" className="mt-2 mb-2" style={{borderRadius: 6, height: 6, width: `80%`, margin:`0 10%`}} />
+              { this.props.initialDownload && (
+                <div className="menu mt-1 mb-1 text-center">
+                { daysLeft != -1  && (
+                      <div>
+                      <div style={{ fontSize: '10px' }}>{`${daysLeft} ${this.props.lang.daysbehindchain}`}</div>
+                      { estMinsToComplete == -1 &&
+                        (
+                          <div className="text-warning"  style={{ fontSize: '10px' }}>{`${this.props.lang.calculatingesttocompletesync}`}</div>
+                        )
+                      }
+                      { estMinsToComplete != -1 &&
+                        (
+                          <div className="text-warning"  style={{ fontSize: '10px' }}>{`${estMinsToCompleteStringified} ${this.props.lang.esttocompletesync}`}</div>
+                        )
+                      }
+                      </div>
+                    )
+                  }
+                { daysLeft == -1  && (
+                  <div className="text-warning" style={{ fontSize: '10px' }}>{`${this.props.lang.calculatingdaysbehindchain}`}</div>
+                ) }
+              </div>
+              )}
               <div style={{ fontSize: '13px' }}>{`${this.props.lang.activeConnections}: ${this.props.connections}`}</div>
-            </NavLink>
-            <div className="menu mt-0 mb-2 pl-2 pr-2 text-center">
+            </div>
+            <div className="menu mt-0 mb-2 text-center">
               <Dot size={10} color={this.props.blockChainConnected ? 'success' : 'danger'} />
               { this.props.blockChainConnected && (<small className="text-success">
                 { this.props.lang.blockchainConnected}
@@ -164,7 +194,10 @@ const mapStateToProps = state => {
     balance: state.chains.balance,
     isStaking: state.chains.isStaking,
     blockChainConnected: state.application.blockChainConnected,
-    isUnlocked: state.chains.unlockedUntil > 0
+    isUnlocked: state.chains.unlockedUntil > 0,
+    initialBlockSyncMinutesToComplete: state.chains.syncMinutesToComplete,
+    initialBlockSyncAverageDays: state.chains.syncAverageDays,
+    initialBlockSyncDaysLeft: state.chains.syncDaysLeft
   };
 };
 
