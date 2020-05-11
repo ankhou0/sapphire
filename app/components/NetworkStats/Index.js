@@ -62,6 +62,8 @@ class Index extends Component {
         <p style={{fontSize:"14px", marginTop:"15px"}}>{ this.props.lang.headers }: <span style={{fontSize:"16px"}}>{headers}</span></p>
         <p style={{fontSize:"14px", marginTop:"15px"}}>{ this.props.lang.block } <span style={{fontSize:"16px"}}>{block}</span> { this.props.lang.of } <span style={{fontSize:"16px"}}>{headers}</span></p>
         <p style={{fontSize:"14px", marginTop:"15px"}}>Size:<span style={{fontSize:"16px"}}>{Tools.formatBytes(this.props.sizeOnDisk)}</span></p>
+        <p style={{fontSize:"14px", marginTop:"15px"}}>{ this.props.lang.headers }: <span style={{fontSize:"16px"}}>{headers}</span></p>
+        <p style={{fontSize:"14px", marginTop:"15px"}}>{ this.props.lang.block } <span style={{fontSize:"16px"}}>{block}</span> { this.props.lang.of } <span style={{fontSize:"16px"}}>{headers}</span></p>
       </div>
     )
   }
@@ -76,7 +78,15 @@ class Index extends Component {
           <div className="row justify-content-center">
             <div className="col-lg-6 col-xl-4 text-center">
               <p className="networkStatsChainTitle">{ this.props.lang.paymentChain }</p>
-                {this.getHtmlChainInfo(true, this.props.percentagePaymentChain, this.props.connectionsPayment, this.props.headersPaymentChain, this.props.blockPaymentChain, "rgb(213,149, 41)", Tools.getIconForTheme("connectionsPaymentChain", false), "paymentChainCircle")}
+                {this.getHtmlChainInfo(true,
+                    this.props.percentagePaymentChain,
+                    this.props.connectionsPayment,
+                    this.props.headersPaymentChain,
+                    this.props.blockPaymentChain,
+                    "rgb(213,149, 41)",
+                    Tools.getIconForTheme("connectionsPaymentChain", false),
+                    "paymentChainCircle")
+                }
             </div>
           </div>
         </Body>
@@ -93,7 +103,10 @@ const mapStateToProps = state => {
     blockPaymentChain: state.chains.blockPayment,
     headersPaymentChain: state.chains.headersPayment,
     theme: state.application.theme,
-    sizeOnDisk: state.chains.sizeOnDisk
+    sizeOnDisk: state.chains.sizeOnDisk,
+    initialBlockSyncMinutesToComplete: state.chains.syncMinutesToComplete,
+    initialBlockSyncAverageDays: state.chains.syncAverageDays,
+    initialBlockSyncDaysLeft: state.chains.syncDaysLeft
   };
 };
 

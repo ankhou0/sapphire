@@ -60,7 +60,9 @@ import {
   BLOCKS_AND_HEADERS,
   SIZE_ON_DISK,
   UPDATE_FAILED_MESSAGE, SERVER_DAEMON_VERSION, LOCAL_DAEMON_VERSION, MINING_INFO, BLOCK_CHAIN_CONNECTED, BETA_MODE,
-  INITIAL_SETUP
+  INITIAL_SETUP,
+  INITIAL_BLOCK_SYNC_PROGRESS,
+  SET_DAEMON_STATE
 } from './types';
 
 export const setWalletCredentials = (args) => {
@@ -546,5 +548,23 @@ export const setInitialSetup = (value) => {
   return {
     type: INITIAL_SETUP,
     payload: value
+  };
+};
+
+export const updateInitialBlockSyncProgress = (val) => {
+  return {
+    type: INITIAL_BLOCK_SYNC_PROGRESS,
+    payload: {
+      syncMinutesToComplete: ((val.syncMinutesToComplete !== undefined) ? val.syncMinutesToComplete : -1) ,
+      syncAverageDays: ((val.syncAverageDays !== undefined) ? val.syncAverageDays : -1),
+      syncDaysLeft: ((val.syncDaysLeft !== undefined) ? val.syncDaysLeft : -1)
+    }
+  };
+};
+
+export const setDaemonState = (state) => {
+  return {
+    type: SET_DAEMON_STATE,
+    payload: state
   };
 };

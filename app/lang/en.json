@@ -253,12 +253,12 @@
     "wrongFileSelected": "ECC - Wrong file selected",
     "pleaseSelectAFileNamed": "Please select a file named wallet.dat",
 
-    "paymentsDay": "day",
-    "paymentsDays": "days",
-    "paymentsMinute": "min",
-    "paymentsMinutes": "mins",
-    "paymentHour": "hour",
-    "paymentHours": "hours",
+    "Day": "day",
+    "Days": "days",
+    "Minute": "min",
+    "Minutes": "mins",
+    "Hour": "hour",
+    "Hours": "hours",
     "transactionsDays": "days ago",
     "transactionsDay": "day ago",
     "transactionsMinutes": "minutes ago",
@@ -280,10 +280,13 @@
     "gallery": "Gallery",
     "provider": "Provider",
     "syncing": "Syncing",
+    "daysbehindchain" : "Days behind",
+    "calculatingdaysbehindchain" : "Calculating days behind...",
+    "esttocompletesync" : "remaining",
+    "calculatingesttocompletesync" : "Calculating approximate time to full sync...",
     "activeConnections": "Active Connections",
     "blockchainConnected": "Blockchain Connected",
     "blockchainDisconnected": "Blockchain Disconnected",
-
     "usd": "USD",
     "gbp": "GBP",
     "eur": "EUR",
@@ -315,5 +318,12 @@
     "groupMessaging": "Groups",
     "noFriendsAvailable": "No friends available",
     "daemonStarted" : "Daemon Started",
-    "daemonStopped": "Daemon Stopped"
+    "daemonStopped": "Daemon Stopped",
+
+    "daemonHealthStatusTitleUnknown" : "Unknown",
+    "daemonHealthStatusTitleRunningNoErrors" : "Wallet Running - No Issues",
+    "daemonHealthStatusTitleRunningRPCErrors" : "Wallet Running - Command Operations Failing",
+    "daemonHealthStatusTitleRunningLogErrors" : "Wallet Running - Chain Errors Detected",
+    "daemonHealthStatusTitleNotRunning" : "Wallet Not Running"
+
 }

@@ -388,7 +388,7 @@ export default class Wallet {
           });
       } else if (process.platform.indexOf('win') > -1) {
         let command = ''
-
+        console.log("setting command");
         if(options.join(' ').indexOf('version') > -1){
           command = `${path} -version`;
           console.log(command)
@@ -402,9 +402,11 @@ export default class Wallet {
           noProfile: true
         });
         ps.addCommand(command);
+
         ps.invoke()
           .then(data => {
-            console.log(data)
+            console.log(data);
+            ps.dispose(); //must dispose of command even in success case to close the command window
             return resolve(data);
           })
           .catch(err => {

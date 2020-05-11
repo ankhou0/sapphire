@@ -18,6 +18,8 @@ import Toast from "../globals/Toast/Toast";
 
 const event = require('../utils/eventhandler');
 const db = require('../utils/database/db');
+const Queue = require('../utils/queue');
+const DaemonState = require('../reducers/state_managers/DaemonState');
 
 class Coin extends Component {
   constructor(props) {
@@ -66,7 +68,7 @@ class Coin extends Component {
       shouldRequestMoreTransactions: false,
       firstRun: false,
       transactionsPage: 0,
-      isIndexingTransactions: false
+      isIndexingTransactions: false,
     };
 
 
@@ -84,8 +86,11 @@ class Coin extends Component {
     clearInterval(this.state.addressProcessorInterval);
 
     event.removeListener('startConnectorChildren');
+    event.removeListener('loadAddresses');
+    event.removeListener('loadTransactions');
     ipcRenderer.removeListener('loading-error');
     ipcRenderer.removeListener('message-from-log');
+    ipcRenderer.removeListener('batch-messages-from-log');
     ipcRenderer.removeListener('downloading-file');
     ipcRenderer.removeListener('downloaded-file');
     ipcRenderer.removeListener('verifying-file');
@@ -132,7 +137,7 @@ class Coin extends Component {
       }
     })
     .catch((err) => {
-      this.processError(err)
+      this.processRPCError(err)
     });
   }
 
@@ -169,29 +174,23 @@ class Coin extends Component {
     ipcRenderer.on('message-from-log', (e, arg) => {
       this.props.setAppendToDebugLog(arg);
       const castedArg = String(arg);
-      const captureErrorStrings = [
-        'Corrupted block database detected',
-        'Aborted block database rebuild. Exiting.',
-        'initError: Cannot obtain a lock on data directory ',
-        'ERROR: VerifyDB():',
-      ];
 
-      const captureLoadingStrings = [
-        'Block Import: already had block',
-        'init message',
-        'Still rescanning',
-      ];
-
-      if (captureErrorStrings.some((v) => { return castedArg.indexOf(v) > -1; })) {
+      if (DaemonState.captureErrorStrings.some((v) => { return castedArg.indexOf(v) > -1; })) {
         ipcRenderer.send('loading-error', { message: castedArg});
       }
 
-      if (captureLoadingStrings.some((v) => { return castedArg.indexOf(v) > -1; })) {
+      if (DaemonState.captureLoadingStrings.some((v) => { return castedArg.indexOf(v) > -1; })) {
         this.props.setLoading({
           isLoading: true,
           loadingMessage: castedArg
         });
       }
+
+    });
+
+    ipcRenderer.on('batch-messages-from-log', (e, arg) => {
+      console.log("catching batch messages");
+      this.updateDaemonState(DaemonState.StateUpdateActions.LOG_UPDATE, DaemonState.StatePayloadTypes.LOG_MESSAGE_BATCH, arg);
     });
   }
 
@@ -200,6 +199,7 @@ class Coin extends Component {
     this.setState({
       walletRunningInterval: setInterval(async () => { await this.walletCycle(); }, this.state.blockInterval),
       newTransactionInterval: setInterval(async() => { await this.newTransactionChecker(); }, 30000)
+
     });
   }
   async loadTransactionsForProcessing() {
@@ -402,6 +402,9 @@ class Coin extends Component {
    */
   blockCycle() {
     this.props.wallet.getBlockChainInfo().then(async (data) => {
+
+      this.updateDaemonState(DaemonState.StateUpdateActions.RPC_UPDATE, DaemonState.StatePayloadTypes.GET_BLOCK_SUCCESS, data);
+
       this.props.setBlockChainConnected(true);
       // process block height in here.
       let syncedPercentage = (data.blocks * 100) / data.headers;
@@ -428,19 +431,22 @@ class Coin extends Component {
       }
     })
     .catch((err) => {
-      this.processError(err)
+      this.processRPCError(err)
     });
 
     this.props.wallet.getMiningInfo().then(async (data) => {
       this.props.miningInfo(data)
     })
     .catch((err) => {
-      this.processError(err)
+      this.processRPCError(err)
     });
   }
 
   coinCycle() {
     this.props.wallet.getInfo().then(async (data) => {
+
+      this.updateDaemonState(DaemonState.StateUpdateActions.RPC_UPDATE, DaemonState.StatePayloadTypes.GET_BLOCK_SUCCESS, data);
+
       // process block height in here.
       let syncedPercentage = (data.blocks * 100) / data.headers;
       syncedPercentage = Math.floor(syncedPercentage * 100) / 100;
@@ -463,14 +469,14 @@ class Coin extends Component {
         });
       }
     }).catch((err) => {
-      this.processError(err)
+      this.processRPCError(err)
     });
 
     this.props.wallet.getWalletInfo().then(async (data) => {
       // console.log(data);
       this.props.walletInfoSec(data);
     }).catch((err) => {
-      this.processError(err)
+      this.processRPCError(err)
     });
   }
 
@@ -500,7 +506,7 @@ class Coin extends Component {
       }
       event.emit('reloadAddresses');
     }).catch((err) => {
-      this.processError(err)
+      this.processRPCError(err)
     });
   }
 
@@ -644,7 +650,7 @@ class Coin extends Component {
   }
 
 
-  processError(err){
+  processRPCError(err){
     console.log('error message', err.message);
     console.log('error code', err.code);
 
@@ -668,7 +674,7 @@ class Coin extends Component {
       if (!this.props.initialSetup) {
         const loadingMessage = this.props.rescanningLogInfo.peekEnd() != null ?
           this.props.rescanningLogInfo.peekEnd(): err.message;
-
+        console.log("this is causing the spam!");
         this.props.setLoading({
           isLoading: true,
           loadingMessage: `${loadingMessage}`
@@ -677,6 +683,8 @@ class Coin extends Component {
     }
     if (err.message === 'Rescanning...') {
       const rescanningMessage = this.props.rescanningLogInfo.peekEnd();
+      console.log("this is causing the spam!2");
+
       this.props.setLoading({
         isLoading: true,
         loadingMessage: `${this.props.lang.rescanning} ${rescanningMessage}`
@@ -688,26 +696,18 @@ class Coin extends Component {
         loadingMessage: err.message
       });
     }
-    if ((err.message === 'Internal Server Error' || err.message === 'ESOCKETTIMEDOUT' || err.body === 'Work queue depth exceeded')) {
-      this.props.setBlockChainConnected(false);
-    }
-    if (err.message === 'connect ECONNREFUSED 127.0.0.1:19119') {
-      this.props.setDaemonRunning(false);
-      this.props.setBlockChainConnected(false);
-      const errorMessage = this.props.rescanningLogInfo.peekEnd();
-      if(this.props.betaMode){
-        Toast({
-          color: 'red',
-          message: errorMessage
-        });
-      }
-      console.log(errorMessage)
-    }
-  }
 
+    this.updateDaemonState(DaemonState.StateUpdateActions.RPC_UPDATE, DaemonState.StatePayloadTypes.GET_BLOCK_FAILURE, err);
+  }
 
   render() {
     return null;
+  }
+
+  updateDaemonState(action, payload_type, payload) {
+    var cur_state = this.props.daemonState;
+    var next_state = DaemonState.handleDaemonStateChange(cur_state, action, payload_type, payload);
+    this.props.setDaemonState(next_state);
   }
 
 }
@@ -726,7 +726,9 @@ const mapStateToProps = state => {
     userAddresses: state.application.userAddresses,
     initialDownload: state.chains.initialDownload,
     blockChainConnected: state.application.blockChainConnected,
-    betaMode: state.application.betaMode
+    betaMode: state.application.betaMode,
+    updateInitialBlockSyncProgress: state.chains.updateInitialBlockSyncProgress,
+    daemonState: state.daemonState
   };
 };
 

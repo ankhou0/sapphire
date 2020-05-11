@@ -8,6 +8,8 @@ import Body from '../Others/Body';
 
 import UnencryptedWalletPartial from '../Settings/cards/UnencryptedWalletCard';
 
+import DaemonConnectionIssues from '../Daemon/cards/DaemonConnectionIssues';
+
 const Tools = require('../../utils/tools');
 
 class Index extends Component {
@@ -60,6 +62,7 @@ class Index extends Component {
           { this.props.unencryptedWallet && (
             <UnencryptedWalletPartial />
           )}
+          <DaemonConnectionIssues />
           <Card body inverse className="homeSection text-center bg-gradient-blue standout" id="balanceInfo">
             <CardTitle id="balance" style={{ fontSize: '25px' }}>{ this.props.lang.balance }</CardTitle>
             <div className="row">
@@ -137,7 +140,8 @@ const mapStateToProps = state => {
 
     wallet: state.application.wallet,
     notifications: state.notifications.entries,
+    daemon: state.daemonState
   };
 };
 
-export default connect(mapStateToProps, actions)(Index);
+export default connect(mapStateToProps, actions, null, {pure:  false })(Index);

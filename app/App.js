@@ -13,6 +13,8 @@ import * as actions from './actions/index';
 import DaemonConnector from './daemon/Connector';
 import * as tools from './utils/tools';
 import DaemonErrorModal from "./components/Others/DaemonErrorModal";
+const event = require('./utils/eventhandler');
+
 
 const settings = require('electron').remote.require('electron-settings');
 
@@ -36,6 +38,7 @@ class App extends Component {
 
   componentWillUnmount() {
     ipcRenderer.emit('stop', {restart: false, closeApplication: true});
+    ipcRenderer.removeListener('closing_daemon');
   }
 
   /**

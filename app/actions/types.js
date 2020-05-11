@@ -74,3 +74,5 @@ export const MINING_INFO = 'mining_info';
 export const BLOCK_CHAIN_CONNECTED = 'block_chain_connected';
 export const BETA_MODE = 'beta_mode';
 export const INITIAL_SETUP = 'intial_setup';
+export const INITIAL_BLOCK_SYNC_PROGRESS = 'initial_block_sync_progress';
+export const SET_DAEMON_STATE = 'set_daemon_state';

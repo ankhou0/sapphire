@@ -23,6 +23,8 @@ const request = require('request-promise-native');
 const fs = require('fs');
 const event = require('../utils/eventhandler');
 const settings = require('electron-settings');
+const DaemonState = require('../reducers/state_managers/DaemonState');
+
 //const zmq = require('zeromq');
 //const socket = zmq.socket('sub');
 
@@ -52,6 +54,15 @@ class Connector extends Component {
     event.removeListener('updateDaemon');
     event.removeListener('initial_setup');
     event.removeListener('checkForDaemonUpdates');
+    event.removeListener('updateDaemon');
+    event.removeListener('initial_setup');
+    event.removeListener('downloading-file');
+    event.removeListener('downloaded-file');
+    event.removeListener('verifying-file');
+    event.removeListener('unzipping-file');
+    event.removeListener('file-download-complete');
+    event.removeListener('download-error');
+    ipcRenderer.removeListener('stop');
   }
 
   bindListeners() {
@@ -271,30 +282,35 @@ class Connector extends Component {
   }
 
 
-  checkIfDaemonIsRunning() {
-    if (this.state.installedVersion !== -1 && !this.state.downloadingDaemon) {
-      const self = this;
-      console.log('Checking if daemon is running...');
-      find('name', 'eccoind').then(async (list) => {
-        if (list && list.length > 0) {
-          console.log('Daemon running');
-          try {
-            await this.props.wallet.getInfo();
-            this.props.setDaemonRunning(true);
-            return true;
-          } catch (e) {
-            this.props.setDaemonRunning(false);
-            return false;
+   async checkIfDaemonIsRunning() {
+       return new Promise(async (resolve, reject) => {
+          if (this.state.installedVersion !== -1 && !this.state.downloadingDaemon) {
+            const self = this;
+            console.log('Checking if daemon is running...');
+            //await return of find to allow promise to return spid list
+            await find('name', 'eccoind').then((list) => {
+              console.log("result of find eccoind...");
+              console.log(list);
+              if (list && list.length > 0) {
+                console.log('Daemon running');
+                try {
+                  this.props.setDaemonRunning(true);
+                  resolve(true);
+                } catch (e) {
+                  this.props.setDaemonRunning(false);
+                  resolve(false);
+                }
+              } else if (list && list.length == 0) {
+                console.log('daemon not running');
+                this.props.setDaemonRunning(false);
+                resolve(false);
+              }
+            });
+          } else {
+            console.log("Daemon not present or downloading. So this cannot be running.")
+            reject(false);
           }
-        } else if (list && list.length == 0) {
-          console.log('daemon not running');
-          this.props.setDaemonRunning(false);
-          return false;
-        }
-      });
-    } else {
-      console.log('in here')
-    }
+        });
   }
 
 
@@ -317,6 +333,7 @@ class Connector extends Component {
     if (fs.existsSync(getPlatformWalletUri())) {
       try {
         const version = await this.props.wallet.getWalletVersion();
+        this.props.setDaemonState(DaemonState.handleDaemonStateChange(this.props.daemon, DaemonState.StateUpdateActions.VERSION_UPDATE, null, version));
         return version;
       } catch (e) {
         console.log('daemon does not exist', e);
@@ -488,26 +505,40 @@ class Connector extends Component {
    * @param args
    */
   startDaemon(args) {
-    console.log('starting daemon...');
-    this.props.wallet.walletstart(args).then((result) => {
-      if (result) {
-        Toast({
-          title: this.props.lang.success,
-          message: this.props.lang.daemonStarted
-        });
+    // check to see if the daemon is already running external to sapphire - RPC calls can still bind to this instance!
+    console.log("Initiate daemon running check");
+    this.checkIfDaemonIsRunning().then((result) => {
+      if(result){
+        console.log('daemon already running, do not start a new instance');
         event.emit('daemonStarted');
-        this.props.setDaemonRunning(true);
-      } else {
-        this.props.setDaemonRunning(false);
-        event.emit('daemonFailed');
+        return;
+      }else{
+        console.log('daemon not currently running, attempt to start new instance');
+        this.props.wallet.walletstart(args).then((result) => {
+          if (result) {
+            Toast({
+              title: this.props.lang.success,
+              message: this.props.lang.daemonStarted
+            });
+            event.emit('daemonStarted');
+            this.props.setDaemonRunning(true);
+          } else {
+            this.props.setDaemonRunning(false);
+            event.emit('daemonFailed');
+          }
+        }).catch(err => {
+          Toast({
+            title: this.props.lang.error,
+            message: err.message,
+            color: 'red'
+          });
+          console.log('Error starting daemon');
+          console.log(err);
+          event.emit('loading-error', { message: err.message });
+        });
       }
     }).catch(err => {
-      Toast({
-        title: this.props.lang.error,
-        message: err.message,
-        color: 'red'
-      });
-      console.log('Error starting daemon');
+      console.log('Error checking daemon state');
       console.log(err);
       event.emit('loading-error', { message: err.message });
     });
@@ -582,7 +613,8 @@ const mapStateToProps = state => {
     installedDaemonVersion: state.application.installedDaemonVersion,
     requiredDaemonVersion: state.application.requiredDaemonVersion,
     log: state.application.log,
-    daemonRunning: state.application.daemonRunning
+    daemonRunning: state.application.daemonRunning,
+    daemon: state.daemonState
   };
 };
 

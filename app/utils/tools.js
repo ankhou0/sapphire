@@ -41,6 +41,27 @@ module.exports = {
     return number.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 });
   },
 
+  convertMinutesToDays(lang, mins) {
+      let hours;
+      let days;
+      let remainingMins;
+      const minsInDay = 24*60; 
+  
+      if(mins < 60){
+          return `${(settings.get('settings.lang') === 'fr' ? `${lang.translationExclusiveForFrench}` : '')} ${mins} ${((mins == 1) ? `${lang.Minute}` : `${lang.Minutes}`)}`
+      }else if(mins > 60 && mins < minsInDay){
+          hours = Math.floor(mins/60)
+          remainingMins = Math.floor(mins%60)
+          return `${(settings.get('settings.lang') === 'fr' ? `${lang.translationExclusiveForFrench}` : '')} ${hours} ${((hours == 1) ? `${lang.Hour}` : `${lang.Hours}`)} ${remainingMins} ${((remainingMins == 1) ? `${lang.Minute}` : `${lang.Minutes}`)}`
+      }else{
+          days = Math.floor((mins/60)/24)
+          remainingMins = mins % minsInDay
+          hours = Math.floor(remainingMins/60) 
+          remainingMins = Math.floor(remainingMins % 60)
+          return `${(settings.get('settings.lang') === 'fr' ? `${lang.translationExclusiveForFrench}` : '')} ${days} ${((days == 1) ? `${lang.Day}` : `${lang.Days}`)} ${hours} ${((hours == 1) ? `${lang.Hour}` : `${lang.Hours}`)} ${remainingMins} ${((remainingMins == 1) ? `${lang.Minute}` : `${lang.Minutes}`)}`
+      }
+  },
+
   calculateTimeSince(lang, today, iTime) {
     let delta = Math.abs(today.getTime() - iTime.getTime()) / 1000;
     const days = Math.floor(delta / 86400);
@@ -602,5 +623,21 @@ module.exports = {
     } else {
       return v1;
     }
+  },
+  searchString (string, pattern) {
+      let result = [];
+
+      const matches = string.match(new RegExp(pattern.source, pattern.flags));
+
+      for (let i = 0; i < matches.length; i++) {
+          result.push(new RegExp(pattern.source, pattern.flags).exec(matches[i]));
+      }
+
+      return result;
+  },
+  median (arr) {
+      var mid = Math.floor(arr.length / 2),
+      nums = [...arr].sort((a, b) => a - b);
+      return arr.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
   }
 };

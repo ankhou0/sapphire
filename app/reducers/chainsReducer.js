@@ -9,11 +9,12 @@ import {
   TRANSACTIONS_TYPE,
   WALLET_INFO,
   WALLET_INFO_SEC,
-  MINING_INFO
+  MINING_INFO,
+  INITIAL_BLOCK_SYNC_PROGRESS
 } from '../actions/types';
 
 
-const INITIAL_STATE = {paymentChainSync: 0, loadingBlockIndexPayment: false, blockPayment: 0, headersPayment:0, connectionsPayment: 0, isStaking: false, stakingConfig: false, staking: 0, balance: 0, transactionsData: [], connections: 0, transactionsType: "all", unconfirmedBalance: 0, daemonVersion: '', newMint: 0, immatureBalance: 0, initialDownload: false, sizeOnDisk: 0, unlockedUntil:0 };
+const INITIAL_STATE = {paymentChainSync: 0, loadingBlockIndexPayment: false, blockPayment: 0, headersPayment:0, connectionsPayment: 0, isStaking: false, stakingConfig: false, staking: 0, balance: 0, transactionsData: [], connections: 0, transactionsType: "all", unconfirmedBalance: 0, daemonVersion: '', newMint: 0, immatureBalance: 0, initialDownload: false, sizeOnDisk: 0, unlockedUntil:0, syncMinutesToComplete: -1, syncAverageDays: -1, syncDaysLeft: -1 };
 
 export default(state = INITIAL_STATE, action) => {
    if(action.type == BLOCK_INDEX_PAYMENT){
@@ -59,8 +60,11 @@ export default(state = INITIAL_STATE, action) => {
 	else if(action.type == SET_DAEMON_VERSION){
 	  return {...state, daemonVersion: action.payload}
    	}
-   	else if(action.type == SET_TEMPORARY_BALANCE){
-   		return {...state, balance: action.payload}
-   	}
+  else if(action.type == SET_TEMPORARY_BALANCE){
+    return {...state, balance: action.payload}
+  }
+  else if(action.type == INITIAL_BLOCK_SYNC_PROGRESS){
+     return {...state, syncMinutesToComplete: action.payload.syncMinutesToComplete, syncAverageDays: action.payload.syncAverageDays, syncDaysLeft: action.payload.syncDaysLeft}
+  }
 	return state;
 }

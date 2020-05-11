@@ -3,7 +3,7 @@ import * as actions from '../../actions';
 import {connect} from 'react-redux';
 import {ipcRenderer} from 'electron';
 import {Button, Dropdown, DropdownItem, DropdownMenu, DropdownToggle} from 'reactstrap';
-import {RefreshIcon} from 'mdi-react';
+import {RefreshIcon} from 'mdi-react';``
 
 import NewsItem from './partials/NewsItem';
 import Header from './../Others/Header';
@@ -45,6 +45,10 @@ class Index extends Component {
 
   componentDidMount() {
     this.props.setNewsChecked(new Date().getTime());
+  }
+
+  componentWillUnmount() {
+    ipcRenderer.removeListener('refresh-complete');
   }
 
   toggle() {

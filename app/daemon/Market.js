@@ -32,7 +32,9 @@ class News extends Component {
   componentWillUnmount() {
     clearInterval(this.state.eccMarketTimer);
 
-    event.removeListener('startConnectorChildren');
+    event.removeListener('startConnectorChildren', this.startCycle);
+    ipcRenderer.removeListener('selected-currency');
+
   }
 
   listenToEvents() {

@@ -28,6 +28,8 @@ const AutoLaunch = require('auto-launch');
 const log = require('electron-log');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const Queue = require('./utils/queue');
+
 
 
 import {
@@ -47,6 +49,10 @@ let ds = null;
 let mainWindow = null;
 let daemonUpdate = false;
 let fullScreen = false;
+
+//used to allow grouping of log messages to the daemon state without causing mass state refreshes
+let logMessages = new Queue(1000);
+
 
 // check if daemon debug file exists
 
@@ -111,6 +117,7 @@ if (!gotTheLock) {
       minHeight: 600,
       title: 'Sapphire',
       backgroundColor: getBackgroundColor(),
+      icon: getAppIcon(),
       frame: false,
       webPreferences: {
         backgroundThrottling: false,
@@ -248,16 +255,7 @@ async function closeApplication() {
 // });
 
 function setupTrayIcon() {
-  let trayImage;
-  const imageFolder = path.join(__dirname, '..', 'resources');
-  //console.log("Loading tray icons");
-  //console.log(imageFolder);
-  // Determine appropriate icon for platform
-  if (process.platform === 'darwin' || process.platform === 'linux') {
-    trayImage = `${imageFolder}/icon.png`;
-  } else {
-    trayImage = `${imageFolder}/icon.ico`;
-  }
+  let trayImage = getAppIcon();
   tray = new Tray(nativeImage.createFromPath(trayImage));
   tray.setToolTip('Sapphire');
 
@@ -275,6 +273,21 @@ function setupTrayIcon() {
 
   tray.setContextMenu(contextMenu)
 
+}
+
+function getAppIcon() {
+  let trayImage;
+  //Required for PRODUCTION as built application packages into app.asar so relative paths break.
+  const imageFolder = process.env.NODE_ENV === 'development'
+      ? path.join(__dirname, '..', 'resources')
+      : path.join(__dirname, '..', 'resources', 'app.asar');
+  // Determine appropriate icon for platform
+  if (process.platform === 'darwin' || process.platform === 'linux') {
+    trayImage = `${imageFolder}/icon.png`;
+  } else {
+    trayImage = `${imageFolder}/icon.ico`;
+  }
+  return trayImage;
 }
 
 function setupEventHandlers() {
@@ -489,17 +502,30 @@ function copyFile(source, target, cb) {
   }
 }
 
+function batchSendLogMessagesForDaemonState(){
+      var logMessageClone = logMessages.clone();
+      logMessages.clear();
+      sendMessage('batch-messages-from-log', logMessageClone);
+}
+
+setInterval(batchSendLogMessagesForDaemonState, 60000); //send log messages in bulk every minute
+
 tail.on('line', (data) => {
   const ignoreStrings = [
-    'UpdateTip:',
     'sending getdata',
     'sending getheaders',
-    'LoadExternalBlockFile'
+    'LoadExternalBlockFile',
+    'UpdateTip'
   ];
+
   const castedArg = String(data);
   if (castedArg != null && (!ignoreStrings.some((v) => { return castedArg.indexOf(v) > -1; }))) {
     sendMessage('message-from-log', data);
   }
+  logMessages.enqueue(castedArg);
+
 });
+
+
 
 
